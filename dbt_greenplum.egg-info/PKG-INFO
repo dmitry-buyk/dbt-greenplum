@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: dbt-greenplum
+Version: 1.0.0
+Summary: The greenplum adapter plugin for dbt
+Home-page: UNKNOWN
+Author: dmitry.naumov
+License: UNKNOWN
+Platform: UNKNOWN
+Requires-Python: >=3.6
+
+The greenplum adapter plugin for dbt
+

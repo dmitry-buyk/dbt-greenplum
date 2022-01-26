@@ -1,4 +1,3 @@
-
 {% macro distributed_by(raw_distributed_by) %}
     {%- if raw_distributed_by is none -%}
       {{ return('') }}
@@ -16,7 +15,6 @@
 
     {{ return(distributed_by_clause) }}
 {%- endmacro -%}
-
 
 {% macro table_storage_parameters(raw_table_storage_parameter) %}
   {%- if raw_table_storage_parameter is none -%}
@@ -43,11 +41,10 @@
 {%- endmacro -%}
 
 {% macro greenplum__create_table_as(temporary, relation, sql) -%}
- {%- set unlogged = config.get('unlogged', default=false) -%}
+  {%- set unlogged = config.get('unlogged', default=false) -%}
   {%- set sql_header = config.get('sql_header', none) -%}
   {%- set raw_distributed_by = config.get('distributed_by', none) -%} 
   {%- set raw_table_storage_parameter = config.get('table_storage_parameters', none) -%} 
-
 
   {{ sql_header if sql_header is not none }}
 
@@ -178,7 +175,6 @@
     {{ return(result) }}
 {%- endmacro %}
 
-
 {% macro greenplum__snapshot_get_time() -%}
   {{ current_timestamp() }}::timestamp without time zone
 {%- endmacro %}
@@ -189,29 +185,24 @@
   To prevent this going over the character limit, the base_relation name is truncated to ensure
   that name + suffix + uniquestring is < 63 characters.  
 #}
-{% macro greenplum__make_temp_relation(schema_tmp, base_relation,suffix) %}
+{% macro greenplum__make_temp_relation(base_relation,suffix) %}
     {% set dt = modules.datetime.datetime.now() %}
     {% set dtstring = dt.strftime("%H%M%S%f") %}
     {% set suffix_length = suffix|length + dtstring|length %}
-    {% set relation_max_name_length = 163 %}
+    {% set relation_max_name_length = 63 %}
     {% if suffix_length > relation_max_name_length %}
         {% do exceptions.raise_compiler_error('Temp relation suffix is too long (' ~ suffix|length ~ ' characters). Maximum length is ' ~ (relation_max_name_length - dtstring|length) ~ ' characters.') %}
     {% endif %}
     {% set tmp_identifier = base_relation.identifier[:relation_max_name_length - suffix_length] ~ suffix ~ dtstring %}
+    {% set tmp_schema = 'pg_temp' %}
     {% do return(base_relation.incorporate(
                                   path={
                                     "identifier": tmp_identifier,
-                                    "schema": schema_tmp,
+                                    "schema": tmp_schema,
                                     "database": none
                                   })) -%}
 {% endmacro %}
 
-
-{#
-  By using dollar-quoting like this, users can embed anything they want into their comments
-  (including nested dollar-quoting), as long as they do not use this exact dollar-quoting
-  label. It would be nice to just pick a new one but eventually you do have to give up.
-#}
 {% macro greenplum_escape_comment(comment) -%}
   {% if comment is not string %}
     {% do exceptions.raise_compiler_error('cannot escape a non-string: ' ~ comment) %}
@@ -223,12 +214,10 @@
   {{ magic }}{{ comment }}{{ magic }}
 {%- endmacro %}
 
-
 {% macro greenplum__alter_relation_comment(relation, comment) %}
   {% set escaped_comment = greenplum_escape_comment(comment) %}
   comment on {{ relation.type }} {{ relation }} is {{ escaped_comment }};
 {% endmacro %}
-
 
 {% macro greenplum__alter_column_comment(relation, column_dict) %}
   {% set existing_columns = adapter.get_columns_in_relation(relation) | map(attribute="name") | list %}
