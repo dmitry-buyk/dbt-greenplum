@@ -3,7 +3,7 @@
   {{ return (dataflow_id)}}    
 {%- endmacro %}
 
-{% macro greenplum__get_scd1_sql(target, source_sql, unique_key) -%} 
+{% macro greenplum__get_scd1_sql(target, source_sql) -%} 
 
     {%- set load_key = config.get('load_key', '') -%}
     {%- set load_type = config.get('load_type', 'U') -%}
