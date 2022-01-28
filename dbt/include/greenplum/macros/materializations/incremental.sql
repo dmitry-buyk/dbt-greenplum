@@ -4,9 +4,9 @@
 
   {% set invalid_strategy_msg -%}
     Invalid incremental strategy provided: {{ strategy }}
-    Expected one of: 'scd1', 'sat'
+    Expected one of: 'scd1', 'sat', 'pit'
   {%- endset %}
-  {% if strategy not in ['scd1', 'sat'] %}
+  {% if strategy not in ['scd1', 'sat', 'pit'] %}
     {% do exceptions.raise_compiler_error(invalid_strategy_msg) %}
   {% endif %}
   {% do return(strategy) %}
@@ -31,7 +31,9 @@
 
   {#-- Validate early so we don't run SQL if the strategy is invalid --#}
   {% set strategy = dbt_greenplum_validate_get_incremental_strategy(config) -%}
-  {% set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') %}
+ 
+
+  {% set dest_columns = process_schema_changes(on_schema_change, tmp_relation, existing_relation) %}
 
   {{ run_hooks(pre_hooks, inside_transaction=True) }}
 
