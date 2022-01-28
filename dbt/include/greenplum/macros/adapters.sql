@@ -62,6 +62,23 @@
   ;
 {%- endmacro %}
 
+{% macro greenplum__create_target_table(tmp_relation, relation) -%}
+  {%- set raw_distributed_by = config.get('distributed_by', none) -%} 
+  {%- set raw_table_storage_parameter = config.get('table_storage_parameters', none) -%} 
+
+  create table {{ relation }}
+  {{ table_storage_parameters(raw_table_storage_parameter) }}   
+  as (
+    select null::text as dataflow_id,
+           null::timestamp(0) as dataflow_dttm, 
+           *
+    from {{ tmp_relation }} 
+    limit 0
+  )
+  {{ distributed_by(raw_distributed_by) }} 
+  ;
+{%- endmacro %}
+
 {% macro greenplum__get_create_index_sql(relation, index_dict) -%}
   {%- set index_config = adapter.parse_index(index_dict) -%}
   {%- set comma_separated_columns = ", ".join(index_config.columns) -%}
@@ -107,7 +124,10 @@
       from {{ relation.information_schema('columns') }}
       where table_name = '{{ relation.identifier }}'
         {% if relation.schema %}
-        and table_schema = '{{ relation.schema }}'
+        and case when p_table_schema = 'pg_temp' and table_schema like 'pg_temp_%' then true
+	                            when table_schema = '{{ relation.schema }}' then true
+	                            else false
+	                            end 
         {% endif %}
       order by ordinal_position
 
